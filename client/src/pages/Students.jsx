@@ -354,23 +354,27 @@ function Students() {
                 </div>
                 <div className="modal-card__body">
                   <div className="modal-field">
-                    <label className="modal-field__label">Name</label>
+                    <label className="modal-field__label modal-field__label--required">Name</label>
                     <input 
                       type="text"
                       className="modal-field__input"
                       value={createForm.name}
                       onChange={(e) => setCreateForm({...createForm, name: e.target.value})}
                       placeholder="Enter student name"
+                      required
                     />
                   </div>
                   <div className="modal-field">
-                    <label className="modal-field__label">Email</label>
+                    <label className="modal-field__label modal-field__label--required">Email</label>
                     <input 
                       type="email"
                       className="modal-field__input"
                       value={createForm.email}
                       onChange={(e) => setCreateForm({...createForm, email: e.target.value})}
                       placeholder="Enter student email"
+                      required
+                      pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                      title="Please enter a valid email address"
                     />
                   </div>
                 </div>

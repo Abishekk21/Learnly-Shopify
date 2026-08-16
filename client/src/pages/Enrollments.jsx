@@ -406,7 +406,7 @@ function Enrollments() {
                 </div>
                 <div className="modal-card__body">
                   <div className="modal-field">
-                    <label className="modal-field__label">Student</label>
+                    <label className="modal-field__label modal-field__label--required">Student</label>
                     <div className="custom-select">
                       <div 
                         className="custom-select__trigger"
@@ -448,7 +448,7 @@ function Enrollments() {
                     </div>
                   </div>
                   <div className="modal-field">
-                    <label className="modal-field__label">Course</label>
+                    <label className="modal-field__label modal-field__label--required">Course</label>
                     <div className="custom-select">
                       <div 
                         className="custom-select__trigger"

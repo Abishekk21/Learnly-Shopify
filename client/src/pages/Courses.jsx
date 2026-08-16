@@ -686,13 +686,14 @@ function Courses() {
                 </div>
                 <div className="modal-card__body">
                   <div className="modal-field">
-                    <label className="modal-field__label">Title</label>
+                    <label className="modal-field__label modal-field__label--required">Title</label>
                     <input 
                       type="text"
                       className="modal-field__input"
                       value={createForm.title}
                       onChange={(e) => setCreateForm({...createForm, title: e.target.value})}
                       placeholder="Enter course title"
+                      required
                     />
                   </div>
                   <div className="modal-row">

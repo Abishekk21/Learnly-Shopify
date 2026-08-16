@@ -1192,6 +1192,7 @@ body {
   font-family: inherit;
   transition: all 0.15s ease;
   height: 36px;
+  cursor: text; /* Fix: Show text cursor on input fields */
 }
 
 .modal-field__input:focus {
@@ -1204,6 +1205,22 @@ body {
   background: var(--neutral-50);
   color: var(--neutral-500);
   cursor: not-allowed;
+}
+
+/* Required field asterisk */
+.modal-field__label--required::after {
+  content: ' *';
+  color: var(--error);
+  font-weight: bold;
+}
+
+/* Email validation styling */
+.modal-field__input[type="email"]:invalid:not(:placeholder-shown) {
+  border-color: var(--error);
+}
+
+.modal-field__input[type="email"]:valid:not(:placeholder-shown) {
+  border-color: var(--success);
 }
 
 .modal-field__textarea-wrapper {
