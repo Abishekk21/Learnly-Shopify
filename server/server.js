@@ -4,9 +4,10 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import connectDB from './config/database.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import { verifyShopifyAuthSimple } from './middleware/auth.js';
+import { verifyShopifyAuth, verifyShopifyAuthSimple } from './middleware/auth.js';
 
 // Routes
+import authRoutes from './routes/authRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
 import studentRoutes from './routes/studentRoutes.js';
 import enrollmentRoutes from './routes/enrollmentRoutes.js';
@@ -35,12 +36,22 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
 
+// Auth Routes (no auth middleware - handles installation)
+app.use('/api', authRoutes);
+
+// Choose authentication middleware based on environment
+// In production: always use session token validation
+// In development: can use simple auth for easier testing
+const authMiddleware = process.env.NODE_ENV === 'production' 
+  ? verifyShopifyAuth 
+  : verifyShopifyAuthSimple;
+
 // API Routes (all protected with Shopify auth)
-app.use('/api/courses', verifyShopifyAuthSimple, courseRoutes);
-app.use('/api/students', verifyShopifyAuthSimple, studentRoutes);
-app.use('/api/enrollments', verifyShopifyAuthSimple, enrollmentRoutes);
-app.use('/api/dashboard', verifyShopifyAuthSimple, dashboardRoutes);
-app.use('/api/shop', verifyShopifyAuthSimple, shopifyRoutes);
+app.use('/api/courses', authMiddleware, courseRoutes);
+app.use('/api/students', authMiddleware, studentRoutes);
+app.use('/api/enrollments', authMiddleware, enrollmentRoutes);
+app.use('/api/dashboard', authMiddleware, dashboardRoutes);
+app.use('/api/shop', authMiddleware, shopifyRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);

@@ -1,18 +1,76 @@
 import axios from 'axios';
+import { getSessionToken } from '@shopify/app-bridge/utilities';
+import { createApp } from '@shopify/app-bridge';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const SHOP_DOMAIN = import.meta.env.VITE_SHOP_DOMAIN || 'development-store.myshopify.com';
 
+// Get shop and host from URL params
+const params = new URLSearchParams(window.location.search);
+const shop = params.get('shop');
+const host = params.get('host');
+
+// Check if we're in an embedded context
+const isEmbedded = window.top !== window.self && host;
+
+// Initialize App Bridge if embedded
+let appBridge = null;
+if (isEmbedded) {
+  try {
+    appBridge = createApp({
+      apiKey: import.meta.env.VITE_SHOPIFY_API_KEY,
+      host: host,
+    });
+  } catch (error) {
+    console.error('Failed to initialize App Bridge:', error);
+  }
+}
+
+// Create axios instance
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
-    'X-Shopify-Shop': SHOP_DOMAIN
   },
-  params: {
-    shop: SHOP_DOMAIN
-  }
 });
+
+// Request interceptor to add authentication
+api.interceptors.request.use(
+  async (config) => {
+    if (isEmbedded && appBridge) {
+      // Get session token from App Bridge for embedded apps
+      try {
+        const sessionToken = await getSessionToken(appBridge);
+        config.headers.Authorization = `Bearer ${sessionToken}`;
+      } catch (error) {
+        console.error('Failed to get session token:', error);
+      }
+    } else if (shop) {
+      // Fallback for development/non-embedded: use shop param and header
+      config.params = { ...config.params, shop };
+      config.headers['X-Shopify-Shop'] = shop;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.error('Authentication failed:', error.response.data);
+      // In embedded context, App Bridge will handle re-authentication
+      if (!isEmbedded && shop) {
+        // For non-embedded, could redirect to auth
+        window.location.href = `${API_URL}/api/auth?shop=${shop}`;
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Dashboard
 export const getDashboard = () => api.get('/api/dashboard');

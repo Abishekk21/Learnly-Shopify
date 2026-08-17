@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { AppProvider, Frame } from '@shopify/polaris';
 import '@shopify/polaris/build/esm/styles.css';
 import './styles/App.css';
@@ -15,7 +15,7 @@ import Students from './pages/Students';
 import StudentDashboard from './pages/StudentDashboard';
 import Enrollments from './pages/Enrollments';
 
-function App() {
+function App({ shop, host }) {
   return (
     <AppProvider
       i18n={{
@@ -35,23 +35,21 @@ function App() {
         },
       }}
     >
-      <Router>
-        <Frame>
-          <div className="app">
-            <Sidebar />
-            <main className="app__main">
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/courses" element={<Courses />} />
-                <Route path="/courses/:id" element={<CourseDetails />} />
-                <Route path="/students" element={<Students />} />
-                <Route path="/students/:id" element={<StudentDashboard />} />
-                <Route path="/enrollments" element={<Enrollments />} />
-              </Routes>
-            </main>
-          </div>
-        </Frame>
-      </Router>
+      <Frame>
+        <div className="app">
+          <Sidebar />
+          <main className="app__main">
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/courses" element={<Courses />} />
+              <Route path="/courses/:id" element={<CourseDetails />} />
+              <Route path="/students" element={<Students />} />
+              <Route path="/students/:id" element={<StudentDashboard />} />
+              <Route path="/enrollments" element={<Enrollments />} />
+            </Routes>
+          </main>
+        </div>
+      </Frame>
     </AppProvider>
   );
 }

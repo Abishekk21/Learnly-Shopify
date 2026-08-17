@@ -1,18 +1,29 @@
 import shopify from '../config/shopify.js';
+import Store from '../models/Store.js';
 
 export const getShopInfo = async (req, res, next) => {
   try {
     const store = req.store;
 
-    // Create Shopify GraphQL client
+    // Fetch the store with accessToken explicitly (since it's select: false)
+    const storeWithToken = await Store.findById(store._id).select('+accessToken');
+
+    if (!storeWithToken || !storeWithToken.accessToken) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        message: 'Store access token not found. Please reinstall the app.'
+      });
+    }
+
+    // Create Shopify GraphQL client with authenticated session
     const client = new shopify.clients.Graphql({
       session: {
-        shop: store.shopDomain,
-        accessToken: store.accessToken
+        shop: storeWithToken.shopDomain,
+        accessToken: storeWithToken.accessToken
       }
     });
 
-    // Query shop information
+    // Query shop information from Shopify
     const response = await client.query({
       data: `{
         shop {

@@ -1,17 +1,40 @@
+import { getShopify, sessionStorage } from '../config/shopify.js';
 import Store from '../models/Store.js';
 
-// Middleware to verify authenticated Shopify store
+/**
+ * Middleware to verify Shopify session token (JWT) from embedded app
+ * This validates the Authorization header containing the session token
+ */
 export const verifyShopifyAuth = async (req, res, next) => {
   try {
-    // Get shop from query/headers/session
-    const shop = req.query.shop || req.headers['x-shopify-shop'] || req.session?.shop;
-
-    if (!shop) {
+    const shopify = getShopify();
+    
+    // Extract session token from Authorization header
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ 
         error: 'Unauthorized', 
-        message: 'No shop domain provided' 
+        message: 'Missing or invalid authorization header' 
       });
     }
+
+    const sessionToken = authHeader.replace('Bearer ', '');
+
+    // Validate the session token with Shopify
+    let payload;
+    try {
+      payload = await shopify.session.decodeSessionToken(sessionToken);
+    } catch (error) {
+      console.error('Session token validation failed:', error);
+      return res.status(401).json({ 
+        error: 'Unauthorized', 
+        message: 'Invalid or expired session token' 
+      });
+    }
+
+    // Extract shop domain from validated payload
+    const shop = payload.dest.replace('https://', '');
 
     // Find store in database
     const store = await Store.findOne({ shopDomain: shop, isActive: true });
@@ -19,13 +42,14 @@ export const verifyShopifyAuth = async (req, res, next) => {
     if (!store) {
       return res.status(401).json({ 
         error: 'Unauthorized', 
-        message: 'Store not found or not authenticated' 
+        message: 'Store not authenticated. Please reinstall the app.' 
       });
     }
 
-    // Attach store to request for downstream use
+    // Attach authenticated store and session info to request
     req.store = store;
     req.shopDomain = shop;
+    req.sessionToken = payload;
 
     next();
   } catch (error) {
@@ -37,15 +61,32 @@ export const verifyShopifyAuth = async (req, res, next) => {
   }
 };
 
-// Simplified auth for development/testing
+/**
+ * Development-only fallback middleware
+ * Allows testing without full Shopify embedded context
+ * DO NOT USE IN PRODUCTION
+ */
 export const verifyShopifyAuthSimple = async (req, res, next) => {
+  // In production, always use proper session token auth
+  if (process.env.NODE_ENV === 'production') {
+    return verifyShopifyAuth(req, res, next);
+  }
+
   try {
-    const shop = req.query.shop || req.headers['x-shopify-shop'] || 'development-store.myshopify.com';
+    const shop = req.query.shop || req.headers['x-shopify-shop'];
+    
+    if (!shop) {
+      return res.status(401).json({ 
+        error: 'Unauthorized', 
+        message: 'No shop domain provided (dev mode)' 
+      });
+    }
     
     let store = await Store.findOne({ shopDomain: shop });
     
-    // Auto-create development store if not exists
+    // Auto-create development store if not exists (dev only)
     if (!store && process.env.NODE_ENV === 'development') {
+      console.warn('⚠️  Development mode: Auto-creating store for', shop);
       store = await Store.create({
         shopDomain: shop,
         shopName: 'Development Store',
@@ -53,7 +94,6 @@ export const verifyShopifyAuthSimple = async (req, res, next) => {
         accessToken: 'dev_token_' + Date.now(),
         isActive: true
       });
-      console.log('Created development store:', shop);
     }
 
     if (!store) {
