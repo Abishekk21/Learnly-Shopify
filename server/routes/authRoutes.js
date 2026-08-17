@@ -94,9 +94,10 @@ router.get('/auth/callback', async (req, res) => {
 
     console.log(`✓ Store authenticated: ${session.shop}`);
 
-    // Redirect to app with embedded parameter
+    // Redirect to frontend app with embedded parameters
     const host = req.query.host;
-    const redirectUrl = `/?shop=${session.shop}&host=${host}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'https://learnly-lms.netlify.app';
+    const redirectUrl = `${frontendUrl}/?shop=${session.shop}&host=${host}`;
     
     res.redirect(redirectUrl);
 
